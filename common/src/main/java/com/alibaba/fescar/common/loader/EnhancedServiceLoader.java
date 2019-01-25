@@ -49,7 +49,7 @@ public class EnhancedServiceLoader {
     private static Map<Class, List<Class>> providers = new ConcurrentHashMap<Class, List<Class>>();
 
     /**
-     * 指定classloader加载server provider
+     * 指定classLoader加载server provider
      *
      * @param service
      * @param loader
@@ -83,7 +83,7 @@ public class EnhancedServiceLoader {
     }
 
     /**
-     * 指定classloader加载server provider
+     * 指定classLoader加载server provider
      *
      * @param service
      * @param loader
@@ -100,7 +100,7 @@ public class EnhancedServiceLoader {
      * @return
      */
     @SuppressWarnings("rawtypes")
-    public static <S> List<Class> getAllExtendsionClass(Class<S> service) {
+    public static <S> List<Class> getAllExtensionClass(Class<S> service) {
         return findAllExtensionClass(service, null, findClassLoader());
     }
 
@@ -110,7 +110,7 @@ public class EnhancedServiceLoader {
      * @return
      */
     @SuppressWarnings("rawtypes")
-    public static <S> List<Class> getAllExtendsionClass(Class<S> service, ClassLoader loader) {
+    public static <S> List<Class> getAllExtensionClass(Class<S> service, ClassLoader loader) {
         return findAllExtensionClass(service, null, loader);
     }
 

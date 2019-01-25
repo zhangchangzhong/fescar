@@ -157,7 +157,7 @@ public abstract class AbstractBranchEndRequest extends AbstractTransactionReques
             leftLen -= resourceIdLen;
         }
 
-        int applicationDataLen = in.readShort();
+        int applicationDataLen = in.readInt();
         if (applicationDataLen > 0) {
             if (leftLen < applicationDataLen) {
                 return false;
@@ -169,5 +169,26 @@ public abstract class AbstractBranchEndRequest extends AbstractTransactionReques
         }
 
         return true;
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        result.append("xid=");
+        result.append(xid);
+        result.append(",");
+        result.append("branchId=");
+        result.append(branchId);
+        result.append(",");
+        result.append("branchType=");
+        result.append(branchType);
+        result.append(",");
+        result.append("resourceId=");
+        result.append(resourceId);
+        result.append(",");
+        result.append("applicationData=");
+        result.append(applicationData);
+
+        return result.toString();
     }
 }

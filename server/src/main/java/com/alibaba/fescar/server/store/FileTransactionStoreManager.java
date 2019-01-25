@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -58,13 +60,13 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
     private static final AtomicLong FILE_TRX_NUM = new AtomicLong(0);
     private static final AtomicLong FILE_FLUSH_NUM = new AtomicLong(0);
     private static final int MARK_SIZE = 4;
-    private static final int MAX_POOL_TIMEMILLS = 2 * 1000;
-    private static final int MAX_FLUSH_TIMEMILLS = 2 * 1000;
+    private static final int MAX_POOL_TIME_MILLS = 2 * 1000;
+    private static final int MAX_FLUSH_TIME_MILLS = 2 * 1000;
     private static final int MAX_FLUSH_NUM = 10;
     private static int PER_FILE_BLOCK_SIZE = 65535 * 8;
     private static long MAX_TRX_TIMEOUT_MILLS = 30 * 60 * 1000;
     private static volatile long trxStartTimeMills = System.currentTimeMillis();
-    private static final boolean ENABLE_SCHEDULE_FUSH = true;
+    private static final boolean ENABLE_SCHEDULE_FLUSH = true;
     private File currDataFile;
     private RandomAccessFile currRaf;
     private FileChannel currFileChannel;
@@ -175,7 +177,7 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
 
         } catch (IOException exx) {
         } finally {
-            closeFile(raf, null);
+            closeFile(raf);
         }
         return false;
     }
@@ -226,7 +228,7 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
                         recoverCurrOffset = fileChannel.position();
                     }
                 }
-                closeFile(raf, fileChannel);
+                closeFile(raf);
             } catch (IOException exx) {
                 LOGGER.error("file close error," + exx.getMessage());
             }
@@ -239,12 +241,8 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
         return file.getName().endsWith(HIS_DATA_FILENAME_POSTFIX);
     }
 
-    private void closeFile(RandomAccessFile raf, FileChannel fileChannel) {
+    private void closeFile(RandomAccessFile raf) {
         try {
-            if (null != fileChannel) {
-                fileChannel.close();
-                fileChannel = null;
-            }
             if (null != raf) {
                 raf.close();
                 raf = null;
@@ -263,10 +261,11 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
         public void run() {
             while (!stopping) {
                 try {
-                    TransactionWriteFuture transactionWriteFuture = transactionWriteFutureQueue.poll(MAX_POOL_TIMEMILLS,
+                    TransactionWriteFuture transactionWriteFuture = transactionWriteFutureQueue.poll(
+                        MAX_POOL_TIME_MILLS,
                         TimeUnit.MILLISECONDS);
                     if (null == transactionWriteFuture) {
-                        flushOnCondtion();
+                        flushOnCondition();
                         continue;
                     }
                     if (transactionWriteFuture.isTimeout()) {
@@ -276,7 +275,7 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
                     if (writeDataFile(transactionWriteFuture.getWriteStore().encode())) {
                         transactionWriteFuture.setResult(Boolean.TRUE);
                         FILE_TRX_NUM.incrementAndGet();
-                        flushOnCondtion();
+                        flushOnCondition();
                     } else {
                         transactionWriteFuture.setResult(Boolean.FALSE);
                     }
@@ -314,12 +313,12 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
             return false;
         }
 
-        private void flushOnCondtion() {
-            if (!ENABLE_SCHEDULE_FUSH) { return; }
+        private void flushOnCondition() {
+            if (!ENABLE_SCHEDULE_FLUSH) { return; }
             long diff = FILE_TRX_NUM.get() - FILE_FLUSH_NUM.get();
             if (diff == 0) { return; }
             if (diff % MAX_FLUSH_NUM == 0
-                || System.currentTimeMillis() - currDataFile.lastModified() > MAX_FLUSH_TIMEMILLS) {
+                || System.currentTimeMillis() - currDataFile.lastModified() > MAX_FLUSH_TIME_MILLS) {
                 try {
                     currFileChannel.force(false);
                 } catch (IOException exx) {
@@ -350,12 +349,9 @@ public class FileTransactionStoreManager implements TransactionStoreManager {
                     }
                 }
                 currFileChannel.force(true);
-                File hisDataFile = new File(hisFullFileName);
-                if (hisDataFile.exists()) {
-                    hisDataFile.delete();
-                }
-                closeFile(currRaf, currFileChannel);
-                currDataFile.renameTo(new File(hisFullFileName));
+                closeFile(currRaf);
+                Files.move(currDataFile.toPath(), new File(hisFullFileName).toPath(),
+                    StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException exx) {
                 LOGGER.error("save history data file error," + exx.getMessage());
             } finally {

@@ -16,15 +16,16 @@
 
 package com.alibaba.fescar.core.protocol;
 
-import com.alibaba.fescar.common.util.NetUtil;
-import io.netty.channel.Channel;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.alibaba.fescar.common.util.NetUtil;
+
+import io.netty.channel.Channel;
+
 public class Version {
 
-    public static final String CURRENT = "0.1.0";
+    public static final String CURRENT = "0.1.2";
 
     public static final Map<String, String> VERSION_MAP = new ConcurrentHashMap<String, String>();
 
@@ -40,7 +41,7 @@ public class Version {
         return VERSION_MAP.get(NetUtil.toStringAddress(c.remoteAddress()));
     }
 
-    public static String checkVersion(String version) throws UncompatibleVersionException {
+    public static String checkVersion(String version) throws IncompatibleVersionException {
         // TODO: check
         return version;
     }

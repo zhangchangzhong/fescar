@@ -53,6 +53,7 @@ public class DataSourceManager implements ResourceManager {
             request.setTransactionId(XID.getTransactionId(xid));
             request.setLockKey(lockKeys);
             request.setResourceId(resourceId);
+            request.setBranchType(branchType);
 
             BranchRegisterResponse response = (BranchRegisterResponse) RmRpcClient.getInstance().sendMsgWithResponse(request);
             if (response.getResultCode() == ResultCode.Failed) {
@@ -159,9 +160,9 @@ public class DataSourceManager implements ResourceManager {
             UndoLogManager.undo(dataSourceProxy, xid, branchId);
         } catch (TransactionException te) {
             if (te.getCode() == TransactionExceptionCode.BranchRollbackFailed_Unretriable) {
-                return BranchStatus.PhaseTwo_RollbackFailed_Unretriable;
+                return BranchStatus.PhaseTwo_RollbackFailed_Unretryable;
             } else {
-                return BranchStatus.PhaseTwo_RollbackFailed_Retriable;
+                return BranchStatus.PhaseTwo_RollbackFailed_Retryable;
             }
         }
         return BranchStatus.PhaseTwo_Rollbacked;

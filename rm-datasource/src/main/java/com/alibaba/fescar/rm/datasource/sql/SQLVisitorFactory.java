@@ -35,7 +35,7 @@ public class SQLVisitorFactory {
     public static SQLRecognizer get(String sql, String dbType) {
         List<SQLStatement> asts = SQLUtils.parseStatements(sql, dbType);
         if (asts == null || asts.size() != 1) {
-            throw new UnsupportedOperationException("xxx");
+            throw new UnsupportedOperationException("Unsupported SQL: " + sql);
         }
         SQLRecognizer recognizer = null;
         SQLStatement ast = asts.get(0);
@@ -47,23 +47,13 @@ public class SQLVisitorFactory {
             } else if (ast instanceof SQLDeleteStatement) {
                 recognizer = new MySQLDeleteRecognizer(sql, ast);
             } else if (ast instanceof SQLSelectStatement) {
-                recognizer = new MySQLSelectForUpdateRecognizer(sql, ast);
+                if (((SQLSelectStatement)ast).getSelect().getQueryBlock().isForUpdate()) {
+                    recognizer = new MySQLSelectForUpdateRecognizer(sql, ast);
+                }
             }
         } else {
             throw new UnsupportedOperationException("Just support MySQL by now!");
         }
         return recognizer;
-    }
-
-    public static void main(String[] args) throws Throwable {
-        String sql = "update material_inventory SET version = ? WHERE is_deleted = 0 and id = ? and version = ?";
-
-        for (int i=0; i<100; i++) {
-            long begin = System.currentTimeMillis();
-            SQLUtils.parseStatements(sql, JdbcConstants.MYSQL);
-            long end = System.currentTimeMillis();
-            System.out.println(String.format("SQL:[%s] parser too slow, cost [%d] ms.", sql, (end - begin)));
-        }
-
     }
 }
